@@ -5,7 +5,7 @@ import 'package:job_swipe/widgets/search_bar.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   List<Job> _filterJobs(List<Job> jobs, String query) {
     if (query.isEmpty) return jobs;
@@ -23,10 +23,7 @@ class HomeScreen extends StatelessWidget {
     return ChangeNotifierProvider<SearchProvider>(
       create: (_) => SearchProvider(),
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Job Application App'),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: const Text('Job Swipe'), centerTitle: true),
         body: Column(
           children: [
             // Search Bar at the top
@@ -43,9 +40,7 @@ class HomeScreen extends StatelessWidget {
                   return JobSwipe(
                     jobs: filteredJobs,
                     onSwipe: (job, isRightSwipe) {
-                      // Add functionality based on swipe direction (e.g., auto apply on right swipe)
                       if (isRightSwipe) {
-                        // For now, simply show a snackbar
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -54,14 +49,12 @@ class HomeScreen extends StatelessWidget {
                           ),
                         );
                       } else {
-                        // Optionally track dismissed jobs
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Dismissed ${job.title}')),
                         );
                       }
                     },
                     onTap: (job) {
-                      // Navigate to detailed view later on
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Tapped on ${job.title}')),
                       );
