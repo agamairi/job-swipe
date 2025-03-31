@@ -59,6 +59,7 @@ class HomeScreen extends StatelessWidget {
                         SnackBar(content: Text('Tapped on ${job.title}')),
                       );
                     },
+                    onRefresh: () {},
                   );
                 },
               ),
