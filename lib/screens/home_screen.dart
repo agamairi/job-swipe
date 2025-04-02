@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:job_swipe/models/job_model.dart';
+import 'package:job_swipe/widgets/footer_navigation_bar.dart';
 import 'package:job_swipe/widgets/job_swipe.dart';
 import 'package:job_swipe/widgets/search_bar.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ class HomeScreen extends StatelessWidget {
       create: (_) => SearchProvider(),
       child: Scaffold(
         appBar: AppBar(title: const Text('Job Swipe'), centerTitle: true),
+        bottomNavigationBar: FooterNavigationBar(),
         body: Column(
           children: [
             // Search Bar at the top
