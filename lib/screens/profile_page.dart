@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:job_swipe/Utils/ats_helpers.dart';
 import 'package:job_swipe/database/database_helper.dart';
 import 'package:job_swipe/models/user_model.dart';
+import 'package:job_swipe/widgets/custom_textfield.dart';
 import 'package:job_swipe/widgets/footer_navigation_bar.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -27,6 +28,10 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserProfile();
   }
 
+  String normalizeText(String text) {
+    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
   Future<void> _loadUserProfile() async {
     UserProfile? profile = await DatabaseHelper().getUserProfile();
     if (profile != null) {
@@ -45,9 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _parseResume(File file) async {
     String? extractedText;
     if (file.path.toLowerCase().endsWith('.pdf')) {
-      extractedText = await atsHelper.extractTextFromPdf(
-        file.path,
-      ); // Use either pdf function.
+      extractedText = await atsHelper.extractTextFromPdf(file.path);
     } else if (file.path.toLowerCase().endsWith('.doc') ||
         file.path.toLowerCase().endsWith('.docx')) {
       extractedText = await atsHelper.extractTextFromWord(file.path);
@@ -61,13 +64,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         if (name != null) {
-          _nameController.text = name;
+          _nameController.text = normalizeText(name);
         }
         if (emails.isNotEmpty) {
           _emailController.text = emails.first;
         }
-        _educationController.text = education;
-        _workExperienceController.text = workExperience;
+        _educationController.text = normalizeText(education);
+        _workExperienceController.text = normalizeText(workExperience);
         resumePath = file.path;
       });
     } else {
@@ -113,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('User Profile'), centerTitle: true),
-      bottomNavigationBar: FooterNavigationBar(),
+      bottomNavigationBar: const FooterNavigationBar(),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -131,33 +134,24 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: const EdgeInsets.all(8.0),
                     child: Text('Selected Resume: $resumePath'),
                   ),
-                TextFormField(
+                // Use the custom widget for text fields with copy functionality
+                CustomEditableField(
+                  label: 'Full Name',
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Full Name'),
-                  validator:
-                      (value) =>
-                          value == null || value.isEmpty
-                              ? 'Please enter your name'
-                              : null,
                 ),
-                TextFormField(
+                CustomEditableField(
+                  label: 'Email',
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator:
-                      (value) =>
-                          value == null || value.isEmpty
-                              ? 'Please enter your email'
-                              : null,
                 ),
-                TextFormField(
+                CustomEditableField(
+                  label: 'Education',
                   controller: _educationController,
-                  decoration: const InputDecoration(labelText: 'Education'),
+                  isMultiLine: true,
                 ),
-                TextFormField(
+                CustomEditableField(
+                  label: 'Work Experience',
                   controller: _workExperienceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Work Experience',
-                  ),
+                  isMultiLine: true,
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
