@@ -15,7 +15,19 @@ class _FooterNavigationBarState extends State<FooterNavigationBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Theme.of(context).primaryColorLight),
+      padding: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2.0, // Border thickness
+          ),
+        ),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20.0), // Curved top-left corner
+          topRight: Radius.circular(20.0), // Curved top-right corner
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -28,7 +40,7 @@ class _FooterNavigationBarState extends State<FooterNavigationBar> {
                 ),
               );
             },
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined, size: 48),
           ),
           IconButton(
             onPressed: () {
@@ -39,7 +51,7 @@ class _FooterNavigationBarState extends State<FooterNavigationBar> {
                 ),
               );
             },
-            icon: Icon(Icons.person_outline),
+            icon: Icon(Icons.person_outline, size: 48),
           ),
         ],
       ),
