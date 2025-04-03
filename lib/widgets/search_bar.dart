@@ -31,12 +31,11 @@ class CustomSearchBar extends StatelessWidget {
             decoration: InputDecoration(
               hintText: 'Search jobs...',
               filled: true,
-              fillColor: Colors.grey[200],
-              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+              prefixIcon: Icon(Icons.search),
               suffixIcon:
                   searchProvider.searchQuery.isNotEmpty
                       ? IconButton(
-                        icon: Icon(Icons.close, color: Colors.grey[600]),
+                        icon: Icon(Icons.close),
                         onPressed: () {
                           searchProvider.clearSearch();
                         },
