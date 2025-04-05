@@ -100,7 +100,10 @@ class _SwipeableJobCardState extends State<SwipeableJobCard>
       },
       child: Transform.translate(
         offset: _offset,
-        child: JobCard(job: widget.job, onTap: widget.onTap),
+        child: SizedBox.expand(
+          // Ensure it takes all available space
+          child: JobCard(job: widget.job, onTap: widget.onTap),
+        ),
       ),
     );
   }
@@ -151,51 +154,30 @@ class _JobSwipeState extends State<JobSwipe> {
       );
     }
 
-    // Determine the number of cards to show in the stack.
-    int remainingJobs = widget.jobs.length - currentIndex;
-    int cardsToShow = remainingJobs > 3 ? 3 : remainingJobs;
-
-    List<Widget> cardStack = [];
-    for (int i = 0; i < cardsToShow; i++) {
-      final job = widget.jobs[currentIndex + i];
-      if (i == 0) {
-        // Add a unique key here to ensure fresh state for each top card.
-        cardStack.add(
-          Positioned(
-            top: 10.0 * i,
-            left: 10.0 * i,
-            right: 10.0 * i,
-            child: SwipeableJobCard(
-              key: ValueKey(currentIndex),
-              job: job,
-              onSwipeRight: () {
-                widget.onSwipe(job, true);
-                setState(() {
-                  currentIndex++;
-                });
-              },
-              onSwipeLeft: () {
-                widget.onSwipe(job, false);
-                setState(() {
-                  currentIndex++;
-                });
-              },
-              onTap: () => widget.onTap(job),
+    return Stack(
+      children:
+          List.generate(
+            (widget.jobs.length - currentIndex).clamp(
+              0,
+              3,
+            ), // Show up to 3 stacked cards
+            (i) => Positioned.fill(
+              // Ensures cards take up full space
+              child: SwipeableJobCard(
+                key: ValueKey(currentIndex + i),
+                job: widget.jobs[currentIndex + i],
+                onSwipeRight: () {
+                  widget.onSwipe(widget.jobs[currentIndex + i], true);
+                  setState(() => currentIndex++);
+                },
+                onSwipeLeft: () {
+                  widget.onSwipe(widget.jobs[currentIndex + i], false);
+                  setState(() => currentIndex++);
+                },
+                onTap: () => widget.onTap(widget.jobs[currentIndex + i]),
+              ),
             ),
-          ),
-        );
-      } else {
-        cardStack.add(
-          Positioned(
-            top: 10.0 * i,
-            left: 10.0 * i,
-            right: 10.0 * i,
-            child: JobCard(job: job, onTap: () => widget.onTap(job)),
-          ),
-        );
-      }
-    }
-
-    return Stack(children: cardStack.reversed.toList());
+          ).reversed.toList(), // Ensure the top card is last in the stack
+    );
   }
 }
