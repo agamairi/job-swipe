@@ -240,9 +240,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : _errorMessage.isNotEmpty
                       ? Center(child: Text(_errorMessage))
+                      : _jobs.isEmpty
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('No jobs found or API key not set.'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _jobs = sampleJobs;
+                                });
+                              },
+                              child: const Text('Use Sample Jobs'),
+                            ),
+                          ],
+                        ),
+                      )
                       : Consumer<SearchProvider>(
                         builder: (context, searchProvider, child) {
-                          // Directly use the _jobs list fetched from the API
                           return JobSwipe(
                             jobs: _jobs,
                             onSwipe: _handleSwipe,
@@ -254,9 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                             onRefresh:
-                                () => _searchJobs(
-                                  searchProvider.searchQuery,
-                                ), // Refresh with current query
+                                () => _searchJobs(searchProvider.searchQuery),
                           );
                         },
                       ),
