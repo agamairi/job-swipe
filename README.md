@@ -106,20 +106,8 @@ flutter run
 
 ## 🔥 Features in Development
 - Tap-to-Expand Job Details
-- Resume-to-Application Auto-Fill Suggestions
 - Improved Resume Parsing
 - Job History & Favorites
-
----
-
-## 💰 Monetization Ideas (For OSS or Premium Fork)
-- **Freemium Model** – Basic app is free; unlock features like enhanced resume editing, analytics, or API usage tiers with a one-time or subscription fee.
-- **Affiliate Links** – Partner with job boards to get a cut of redirected traffic.
-- **In-App Resume Builder** – Premium resume templates, export formats, and optimization suggestions.
-- **Cloud Sync (Optional)** – Paid tier offers cloud storage of profiles and resumes.
-- **B2B Tools** – Offer the swipe tech to recruiters or career services as a white-label solution.
-- **Ad-Based Revenue** – Offer limited ads in the free tier.
-- **Donation & Sponsorship** – GitHub Sponsors, Buy Me a Coffee, or Patreon.
 
 ---
 
