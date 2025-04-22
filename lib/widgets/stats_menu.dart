@@ -9,6 +9,7 @@ class StatsMenu extends StatefulWidget {
   final int apiSearches;
   final String currentLocation;
   final Function(String) onLocationChanged;
+  final ScrollController scrollController;
 
   const StatsMenu({
     super.key,
@@ -18,6 +19,7 @@ class StatsMenu extends StatefulWidget {
     required this.apiSearches,
     required this.currentLocation,
     required this.onLocationChanged,
+    required this.scrollController,
   });
 
   @override
@@ -47,10 +49,9 @@ class _StatsMenuState extends State<StatsMenu> {
       _storedApiKey = prefs.getString('apiKey');
       _apiKeyController.text = _storedApiKey ?? '';
       _storedSearchLimit = prefs.getInt('searchLimit');
-      _searchLimitController.text =
-          _storedSearchLimit?.toString() ?? '5'; // Default to 5
+      _searchLimitController.text = _storedSearchLimit?.toString() ?? '5';
       _storedUrl = prefs.getString('apiUrl');
-      _urlController.text = _storedUrl ?? ''; // Default URL
+      _urlController.text = _storedUrl ?? '';
     });
   }
 
@@ -67,7 +68,6 @@ class _StatsMenuState extends State<StatsMenu> {
     final parsedLimit = int.tryParse(limit);
     if (parsedLimit != null && parsedLimit > 0) {
       await prefs.setInt('searchLimit', parsedLimit);
-      // You might want to trigger an update in HomeScreen here if the limit changed
     }
   }
 
@@ -81,153 +81,218 @@ class _StatsMenuState extends State<StatsMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('API Settings', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: 'Enter API URL',
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) {
-              _saveApiUrl(value);
-            },
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _apiKeyController,
-            decoration: const InputDecoration(
-              labelText: 'Enter your API Key',
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) {
-              _saveApiKey(value);
-            },
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _searchLimitController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Daily Search Limit',
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) {
-              _saveSearchLimit(value);
-            },
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Search Statistics',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Searches Left Today: ${widget.searchesLeft} / ${_storedSearchLimit ?? 5} (customizable)',
-            style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Location Filter',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          DropdownButtonFormField<String>(
-            value: _selectedCountry,
-            decoration: const InputDecoration(
-              labelText: 'Country',
-              border: OutlineInputBorder(),
-            ),
-            items:
-                <String>['Canada', 'USA', 'UK', 'Australia'].map((
-                  String value,
-                ) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null && newValue != _selectedCountry) {
-                setState(() {
-                  _selectedCountry = newValue;
-                });
-                widget.onLocationChanged(newValue);
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Swipe Statistics',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Row(
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          controller: widget.scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Applied Jobs: '),
-              for (int i = 0; i < widget.rightSwipes; i++)
-                const Icon(Icons.favorite, color: Colors.green),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text('Dismissed Jobs: '),
-              for (int i = 0; i < widget.leftSwipes; i++)
-                const Icon(Icons.close, color: Colors.red),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'API Searches (customizable limit):',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: List.generate(
-              _storedSearchLimit ?? 5,
-              (index) => Icon(
-                index < widget.apiSearches
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                color: Colors.redAccent,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Swipe Ratio', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 100,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 5,
-                centerSpaceRadius: 30,
-                sections: [
-                  PieChartSectionData(
-                    value: widget.rightSwipes.toDouble(),
-                    color: Colors.green,
-                    title:
-                        widget.rightSwipes > 0 ? '${widget.rightSwipes}' : '',
-                    radius: 40,
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  PieChartSectionData(
-                    value: widget.leftSwipes.toDouble(),
-                    color: Colors.red,
-                    title: widget.leftSwipes > 0 ? '${widget.leftSwipes}' : '',
-                    radius: 40,
+                ),
+              ),
+
+              _buildCard(
+                title: 'API Settings',
+                children: [
+                  _buildInputField('API URL', _urlController, _saveApiUrl),
+                  const SizedBox(height: 12),
+                  _buildInputField('API Key', _apiKeyController, _saveApiKey),
+                  const SizedBox(height: 12),
+                  _buildInputField(
+                    'Daily Search Limit',
+                    _searchLimitController,
+                    _saveSearchLimit,
+                    isNumber: true,
                   ),
                 ],
               ),
-            ),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                title: 'Search Statistics',
+                children: [
+                  Text(
+                    'Searches Left Today: ${widget.searchesLeft} / ${_storedSearchLimit ?? 5}',
+                    style: textTheme.bodyMedium!.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                title: 'Location Filter',
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedCountry,
+                    decoration: const InputDecoration(
+                      labelText: 'Country',
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        ['Canada', 'USA', 'UK', 'Australia'].map((
+                          String value,
+                        ) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null && newValue != _selectedCountry) {
+                        setState(() => _selectedCountry = newValue);
+                        widget.onLocationChanged(newValue);
+                      }
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                title: 'Swipe Stats',
+                children: [
+                  _buildIconRow(
+                    'Applied Jobs',
+                    widget.rightSwipes,
+                    Icons.favorite,
+                    Colors.green,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildIconRow(
+                    'Dismissed Jobs',
+                    widget.leftSwipes,
+                    Icons.close,
+                    Colors.red,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                title: 'API Searches (Usage)',
+                children: [
+                  Row(
+                    children: List.generate(
+                      _storedSearchLimit ?? 5,
+                      (index) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(
+                          index < widget.apiSearches
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                title: 'Swipe Ratio',
+                children: [
+                  SizedBox(
+                    height: 150,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 5,
+                        centerSpaceRadius: 40,
+                        sections: [
+                          PieChartSectionData(
+                            value: widget.rightSwipes.toDouble(),
+                            color: Colors.green,
+                            title:
+                                widget.rightSwipes > 0
+                                    ? '${widget.rightSwipes}'
+                                    : '',
+                            radius: 50,
+                          ),
+                          PieChartSectionData(
+                            value: widget.leftSwipes.toDouble(),
+                            color: Colors.red,
+                            title:
+                                widget.leftSwipes > 0
+                                    ? '${widget.leftSwipes}'
+                                    : '',
+                            radius: 50,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCard({required String title, required List<Widget> children}) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField(
+    String label,
+    TextEditingController controller,
+    Function(String) onChanged, {
+    bool isNumber = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildIconRow(String label, int count, IconData icon, Color color) {
+    return Row(
+      children: [
+        Text('$label: ', style: Theme.of(context).textTheme.bodyMedium),
+        ...List.generate(count, (_) => Icon(icon, color: color, size: 20)),
+      ],
     );
   }
 }

@@ -170,20 +170,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showStatsMenu() async {
-    await showModalBottomSheet<String>(
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // Important for full height
+      backgroundColor: Colors.transparent, // To show the rounded corners
       builder: (BuildContext context) {
-        return StatsMenu(
-          searchesLeft: _maxSearchesPerDay - _searchesToday,
-          rightSwipes: _rightSwipes,
-          leftSwipes: _leftSwipes,
-          apiSearches: _apiSearches,
-          currentLocation: _locationFilter,
-          onLocationChanged: (newLocation) {
-            setState(() {
-              _locationFilter = newLocation;
-            });
-            _loadInitialJobs(); // Reload jobs with the new filter
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5, // 50% of the screen height
+          minChildSize: 0.4,
+          maxChildSize: 0.95, // Almost full screen
+          builder: (context, scrollController) {
+            return StatsMenu(
+              scrollController: scrollController, // Pass it in!
+              searchesLeft: _maxSearchesPerDay - _searchesToday,
+              rightSwipes: _rightSwipes,
+              leftSwipes: _leftSwipes,
+              apiSearches: _apiSearches,
+              currentLocation: _locationFilter,
+              onLocationChanged: (newLocation) {
+                setState(() {
+                  _locationFilter = newLocation;
+                });
+                _loadInitialJobs(); // Refresh jobs
+              },
+            );
           },
         );
       },
