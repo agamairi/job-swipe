@@ -1,127 +1,139 @@
-# 🚀 Flutter Job Application App  
-A mobile app that allows users to browse and apply for jobs using a **Tinder-style swipe interface**. Users can swipe through job listings, apply with their stored resume, and manage their profile with work experience and education details.
+# 🚀 Flutter Job Application App
+A mobile app that allows users to browse and apply for jobs using a Tinder-style swipe interface. Users can swipe through job listings, upload and parse their resumes, and manage a detailed professional profile.
 
 ---
 
-## 📌 Features  
+## 📌 Features
 
-### 🔥 Job Search & Swipe UI  
-- **Search Bar** – Filter job listings by **job title, location, or keywords**.  
-- **Job Cards** – Display job details like **title, company logo, description, and source**.  
-- **Swipe Actions**:  
-  - **Swipe Left** – Discard the job (it won’t be shown again).  
-  - **Swipe Right** – Open job application page with **pre-filled user details (where applicable)**.  
-- **Tap-to-Expand** – Tap on a job card to view full job details.  
+### 🔥 Job Search & Swipe UI
+- **Search Bar** – Filter job listings by job title, location, or keywords.
+- **Job Cards** – Show job title, company logo, description, and link.
+- **Swipe Actions**:
+  - **Swipe Left** – Discards the job (excluded from stats).
+  - **Swipe Right** – Opens the job posting URL directly (no auto-fill).
+  - **Tap-to-Expand** – *(In development)* View full job details.
 
-### 🌐 Job Listings Fetching  
-- **Fetch from APIs** (LinkedIn, Indeed, etc.) or **Web Scraping** for sites without APIs.  
-- **Ensure data consistency** across different sources.  
-- **Local Caching** – Store recently fetched jobs for a smoother experience.  
+### 🌐 Custom Job API Input
+- **User-Provided API** – Input your own API URL and key.
+- **Search Limit Control** – Avoid exhausting free-tier limits.
+- **Flexible Formatting** – API response parser ensures consistent job cards.
 
-### 🏠 User Profile Management  
-- **Profile Form** to enter/edit:  
-  - Name  
-  - Work Experience (Job title, Start/End date, Description)  
-  - Education (University, Degree, Graduation Year)  
-- **Resume Upload** – Supports **PDF, DOC**, and other common formats.  
-- **Local Storage** – Profile & resume stored **securely on the device**.  
+### 📈 Interaction Statistics
+- Tracks user engagement:
+  - Total swipes.
+  - Swipes left.
+  - Swipes right.
 
-### ⚡ Application Auto-Fill  
-- **Prefill job application fields** (Name, Email, Resume) where supported.  
-- **Fallback Redirection** – Redirect users to external job pages if auto-fill is not possible.  
+### 🏠 Profile & Resume Management
+- **User Profile** – Edit personal info, work history, and education.
+  - Name
+  - Work Experience (title, duration, description)
+  - Education (institute, degree, year)
+- **Resume Upload** – Accepts PDF, DOC, and standard formats.
+- **Resume Parsing & Editing** – Parsed resume shown in editable format for review and copy-paste.
 
-### 📂 Local Storage  
-- **Uses SQLite or Shared Preferences** for profile data and resume storage.  
-- **Tracks swiped jobs** to prevent repeat listings.  
+### 📂 Local Storage
+- **Secure Storage** – Profile and resume stored locally via SQLite or Shared Preferences.
+- **Swipe Tracking** – *(Planned)* No caching or local history yet.
 
-### 🎨 UI & Animations  
-- **Material Design 3** for a modern, intuitive experience.  
-- **Smooth swipe animations** for job cards.  
-- **Tap-to-expand animations** for job details.  
+### 🎨 UI & Animations
+- Built with **Material Design 3**.
+- Smooth swipe gestures and transitions.
+- Fully supports **Dark Mode**.
 
-### 🛠️ Additional Features  
-- **Job History** – Keep track of swiped jobs to avoid duplicates.  
-- **Settings & Preferences** – Toggle job notifications, filter jobs by location.  
-- **Error Handling** – Manage missing data, network issues gracefully.  
-- **Privacy & Security** – Ensure **secure** handling of user data (e.g., resume storage).  
-
----
-
-## 📌 Tech Stack  
-- **Flutter SDK** – Cross-platform mobile development.  
-- **Dart** – App programming language.  
-- **SQLite / Shared Preferences** – Local data storage.  
-- **Dio / HTTP** – API calls & web scraping.  
-- **Flutter Animations** – Swipe and UI transitions.  
+### 🛠️ Additional Features
+- **Settings Panel** – Customize API keys, control search limits, toggle filters.
+- **Robust Error Handling** – Graceful degradation on network/API failure.
+- **Security** – All personal data is stored securely on-device.
+- **Job History** – *(Planned)* Add access to previous swipes and favorites.
 
 ---
 
-## 🏗️ Project Setup  
+## 📌 Tech Stack
+- **Flutter SDK** – Cross-platform UI toolkit.
+- **Dart** – Application logic and UI code.
+- **SQLite / Shared Preferences** – Local persistence.
+- **Dio / HTTP** – Networking layer.
+- **Flutter Animations** – UI transitions and swipe effects.
 
-### 🔧 Prerequisites  
-Make sure you have the following installed:  
-- [Flutter SDK](https://flutter.dev/docs/get-started/install)  
-- Dart  
-- Android Studio / VS Code (with Flutter extension)  
-- Git  
+---
 
-### 🚀 Clone the Repository  
-```sh
+## 🏗️ Project Setup
+
+### 🔧 Prerequisites
+Ensure you have:
+- Flutter SDK
+- Dart
+- Android Studio or VS Code (with Flutter plugin)
+- Git
+
+### 🚀 Clone the Repository
+```bash
 git clone https://github.com/agamairi/job-swipe.git
 cd job-application-app
 ```
 
-### 📦 Install Dependencies  
-```sh
+### 📦 Install Dependencies
+```bash
 flutter pub get
 ```
 
-### 🔨 Run the App  
-```sh
+### 🔨 Run the App
+```bash
 flutter run
 ```
 
 ---
 
-## 🔥 Features in Development  
-- [ ] Implement **Web Scraping** for job listings  
-- [ ] Support **Job History Tracking**  
-- [ ] **Optimize Swipe Animations**  
-- [ ] Add **Dark Mode**  
+## 🔥 Features in Development
+- Tap-to-Expand Job Details
+- Resume-to-Application Auto-Fill Suggestions
+- Improved Resume Parsing
+- Job History & Favorites
 
 ---
 
-## 🚀 Contributing  
-Want to contribute? **Fork** the repo, create a new branch, and submit a pull request!  
+## 💰 Monetization Ideas (For OSS or Premium Fork)
+- **Freemium Model** – Basic app is free; unlock features like enhanced resume editing, analytics, or API usage tiers with a one-time or subscription fee.
+- **Affiliate Links** – Partner with job boards to get a cut of redirected traffic.
+- **In-App Resume Builder** – Premium resume templates, export formats, and optimization suggestions.
+- **Cloud Sync (Optional)** – Paid tier offers cloud storage of profiles and resumes.
+- **B2B Tools** – Offer the swipe tech to recruiters or career services as a white-label solution.
+- **Ad-Based Revenue** – Offer limited ads in the free tier.
+- **Donation & Sponsorship** – GitHub Sponsors, Buy Me a Coffee, or Patreon.
 
 ---
 
-## 🛠️ Troubleshooting  
-
-### 🔴 App Fails to Start  
-- Ensure all dependencies are installed:  
-  ```sh
-  flutter pub get
-  ```
-- Check Flutter version:  
-  ```sh
-  flutter --version
-  ```
-
-### 🔴 Job Listings Not Fetching  
-- Ensure internet connectivity.  
-- Debug API calls using:  
-  ```sh
-  flutter run --verbose
-  ```
+## 🚀 Contributing
+Want to contribute? Fork the repo, create a new branch, and submit a pull request!
 
 ---
 
-## 📜 License  
-This project is licensed under the **MIT License**.  
+## 🛠️ Troubleshooting
+
+### 🔴 App Fails to Start
+- Ensure dependencies are installed:
+```bash
+flutter pub get
+```
+- Check Flutter version:
+```bash
+flutter --version
+```
+
+### 🔴 Jobs Not Loading
+- Verify internet connectivity.
+- Check your custom API URL and key.
+- Run in verbose mode:
+```bash
+flutter run --verbose
+```
 
 ---
 
-## 📞 Contact  
-For any questions, feel free to reach out via **[GitHub Issues](https://github.com/agamairi/job-swipe/issues)**.  
+## 📜 License
+MIT License – use freely with attribution.
+
+## 📞 Contact
+For questions, feedback, or contributions, open an issue on GitHub.
 
