@@ -3,6 +3,25 @@ A mobile app that allows users to browse and apply for jobs using a Tinder-style
 
 ---
 
+## 📸 Screenshots
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="screenshots/home_screen.png" alt="Home Screen" width="200"/></td>
+      <td><img src="screenshots/stats_page_1.png" alt="Swipe View" width="200"/></td>
+    </tr>
+    <tr>
+      <td><img src="screenshots/stats_page_2.png" alt="Profile Page" width="200"/></td>
+      <td><img src="screenshots/profile_page.png" alt="Resume Parser" width="200"/></td>
+    </tr>
+  </table>
+</div>
+
+---
+
+---
+
 ## 📌 Features
 
 ### 🔥 Job Search & Swipe UI
