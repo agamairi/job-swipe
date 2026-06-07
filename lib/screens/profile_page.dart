@@ -116,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('User Profile'), centerTitle: true),
-      bottomNavigationBar: const FooterNavigationBar(),
+      bottomNavigationBar: const FooterNavigationBar(currentIndex: 2),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -134,7 +134,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: const EdgeInsets.all(8.0),
                     child: Text('Selected Resume: $resumePath'),
                   ),
-                // Use the custom widget for text fields with copy functionality
                 CustomEditableField(
                   label: 'Full Name',
                   controller: _nameController,

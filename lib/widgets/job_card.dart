@@ -7,12 +7,6 @@ class JobCard extends StatelessWidget {
 
   const JobCard({super.key, required this.job, required this.onTap});
 
-  String _truncateDescription(String description, int maxLength) {
-    return description.length > maxLength
-        ? '${description.substring(0, maxLength)}...'
-        : description;
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -32,60 +26,93 @@ class JobCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.max, // Ensures it takes full height
               children: [
                 Expanded(
-                  // Makes the inner content take all available space
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  job.title,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                  // Makes the inner content take all available space and scrollable
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    job.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  job.company,
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: Image.network(
-                              job.logoUrl,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) => Icon(
-                                    Icons.business,
-                                    size: 50,
-                                    color: Colors.grey[400],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    job.company,
+                                    style: TextStyle(fontSize: 14),
                                   ),
+                                ],
+                              ),
                             ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.network(
+                                job.logoUrl,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (context, error, stackTrace) => Icon(
+                                      Icons.business,
+                                      size: 50,
+                                      color: Colors.grey[400],
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(child: Text(job.location, style: TextStyle(color: Colors.grey[800]))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        if (job.salary != 'Not specified')
+                          Row(
+                            children: [
+                              Icon(Icons.monetization_on, size: 16, color: Colors.green[700]),
+                              const SizedBox(width: 4),
+                              Expanded(child: Text(job.salary, style: TextStyle(color: Colors.green[800], fontWeight: FontWeight.w500))),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text('📍 ${job.location}'),
-                      const SizedBox(height: 4),
-                      Text('💰 ${job.salary}'),
-                      const SizedBox(height: 4),
-                      Text('🔗 Source: ${job.source}'),
-                      const SizedBox(height: 4),
-                      Text('📅 Date Posted: Not Available'),
-                      const SizedBox(height: 8),
-                      Text(_truncateDescription(job.description, 200)),
-                    ],
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            Chip(
+                              label: Text('via ${job.source}', style: const TextStyle(fontSize: 12)),
+                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              side: BorderSide.none,
+                            ),
+                            if (job.datePosted != 'Not Available')
+                              Chip(
+                                label: Text(job.datePosted, style: const TextStyle(fontSize: 12)),
+                                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                                side: BorderSide.none,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Text(
+                          job.description,
+                          style: const TextStyle(fontSize: 14, height: 1.5),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

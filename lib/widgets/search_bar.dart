@@ -1,26 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-class SearchProvider extends ChangeNotifier {
-  String _searchQuery = '';
-
-  String get searchQuery => _searchQuery;
-
-  void updateSearch(String query) {
-    _searchQuery = query;
-    notifyListeners();
-  }
-
-  void clearSearch() {
-    _searchQuery = '';
-    notifyListeners();
-  }
-}
 
 class CustomSearchBar extends StatefulWidget {
   final Function(String) onSearch;
+  final String initialQuery;
 
-  const CustomSearchBar({super.key, required this.onSearch});
+  const CustomSearchBar({super.key, required this.onSearch, this.initialQuery = ''});
 
   @override
   State<CustomSearchBar> createState() => _CustomSearchBarState();
@@ -32,9 +16,17 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
   @override
   void initState() {
     super.initState();
-    // Initialize the text field with the current search query from the provider
-    _searchController.text =
-        Provider.of<SearchProvider>(context, listen: false).searchQuery;
+    _searchController.text = widget.initialQuery;
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update the text if the initialQuery changed explicitly
+    if (widget.initialQuery != oldWidget.initialQuery && 
+        widget.initialQuery != _searchController.text) {
+      _searchController.text = widget.initialQuery;
+    }
   }
 
   @override
@@ -45,41 +37,37 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SearchProvider>(
-      builder: (context, searchProvider, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: TextField(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _searchController,
+        builder: (context, value, child) {
+          return TextField(
             controller: _searchController,
-            onChanged: (value) => searchProvider.updateSearch(value),
-            onSubmitted: (value) {
-              widget.onSearch(value); // Call the onSearch callback
+            onSubmitted: (query) {
+              widget.onSearch(query);
             },
             decoration: InputDecoration(
               hintText: 'Search jobs...',
               filled: true,
               prefixIcon: const Icon(Icons.search),
-              suffixIcon:
-                  searchProvider.searchQuery.isNotEmpty
-                      ? IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          searchProvider.clearSearch();
-                          _searchController.clear();
-                          widget.onSearch(
-                            '',
-                          ); // Optionally trigger a refresh with an empty query
-                        },
-                      )
-                      : null,
+              suffixIcon: value.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _searchController.clear();
+                        widget.onSearch('');
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30.0),
                 borderSide: BorderSide.none,
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

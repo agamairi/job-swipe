@@ -1,60 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:job_swipe/screens/home_screen.dart';
 import 'package:job_swipe/screens/profile_page.dart';
+import 'package:job_swipe/screens/sources_page.dart';
 
-class FooterNavigationBar extends StatefulWidget {
-  final VoidCallback? onTap;
+class FooterNavigationBar extends StatelessWidget {
+  final int currentIndex;
 
-  const FooterNavigationBar({super.key, this.onTap});
+  const FooterNavigationBar({super.key, this.currentIndex = 0});
 
-  @override
-  createState() => _FooterNavigationBarState();
-}
-
-class _FooterNavigationBarState extends State<FooterNavigationBar> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2.0, // Border thickness
-          ),
-        ),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.0), // Curved top-left corner
-          topRight: Radius.circular(20.0), // Curved top-right corner
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => HomeScreen(),
-                ),
-              );
+    return NavigationBar(
+      selectedIndex: currentIndex,
+      onDestinationSelected: (index) {
+        if (index == currentIndex) return;
+
+        Widget destination;
+        switch (index) {
+          case 0:
+            destination = const HomeScreen();
+            break;
+          case 1:
+            destination = const SourcesPage();
+            break;
+          case 2:
+            destination = const ProfilePage();
+            break;
+          default:
+            return;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => destination,
+            transitionDuration: const Duration(milliseconds: 200),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
             },
-            icon: Icon(Icons.home_outlined, size: 48),
           ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (BuildContext context) => ProfilePage(),
-                ),
-              );
-            },
-            icon: Icon(Icons.person_outline, size: 48),
-          ),
-        ],
-      ),
+        );
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home_rounded),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.api_outlined),
+          selectedIcon: Icon(Icons.api_rounded),
+          label: 'Sources',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outline),
+          selectedIcon: Icon(Icons.person_rounded),
+          label: 'Profile',
+        ),
+      ],
     );
   }
 }

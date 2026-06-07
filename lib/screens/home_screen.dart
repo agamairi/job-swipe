@@ -4,8 +4,8 @@ import 'package:job_swipe/models/job_model.dart';
 import 'package:job_swipe/widgets/footer_navigation_bar.dart';
 import 'package:job_swipe/widgets/job_swipe.dart';
 import 'package:job_swipe/widgets/search_bar.dart';
-import 'package:job_swipe/widgets/stats_menu.dart';
-import 'package:provider/provider.dart';
+import 'package:job_swipe/widgets/filters_menu.dart';
+import 'package:job_swipe/screens/job_webview_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,33 +17,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Job> _jobs = []; // Initialize as empty
+  List<Job> _jobs = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
   String _errorMessage = '';
 
-  int _searchesToday = 0;
-  DateTime? _lastSearchTime;
-  static const int _maxSearchesPerDay = 5;
-  static const String _searchesTodayKey = 'searchesToday';
-  static const String _lastSearchTimeKey = 'lastSearchTime';
+  // Pagination
+  String? _nextPageUrl;
 
+  // Stats
   int _rightSwipes = 0;
   int _leftSwipes = 0;
   static const String _rightSwipesKey = 'rightSwipes';
   static const String _leftSwipesKey = 'leftSwipes';
 
-  int _apiSearches = 0;
-  static const String _apiSearchesKey = 'apiSearches';
-
-  String _locationFilter = 'Canada'; // Default location filter
+  // Filters & state
+  String _locationFilter = 'Canada';
+  String _dateFilter = '';
+  String _lastSearchQuery = '';
   String? _apiKey;
 
   @override
   void initState() {
     super.initState();
     _loadPersistentStats();
-    _loadApiKey(); // Load API key on startup
-    _loadInitialJobs(); // Load initial jobs on startup
+    _loadApiKey();
+    _loadInitialState();
+  }
+
+  Future<void> _loadInitialState() async {
+    final prefs = await SharedPreferences.getInstance();
+    _lastSearchQuery = prefs.getString('lastSearchQuery') ?? '';
+
+    if (_lastSearchQuery.isNotEmpty) {
+      _searchJobs(_lastSearchQuery);
+    } else {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadApiKey() async {
@@ -56,143 +66,101 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadPersistentStats() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _searchesToday = prefs.getInt(_searchesTodayKey) ?? 0;
-      final lastSearchMillis = prefs.getInt(_lastSearchTimeKey);
-      _lastSearchTime =
-          lastSearchMillis != null
-              ? DateTime.fromMillisecondsSinceEpoch(lastSearchMillis)
-              : null;
       _rightSwipes = prefs.getInt(_rightSwipesKey) ?? 0;
       _leftSwipes = prefs.getInt(_leftSwipesKey) ?? 0;
-      _apiSearches = prefs.getInt(_apiSearchesKey) ?? 0;
-
-      // Reset searches if it's a new day
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final lastSearchDay =
-          _lastSearchTime != null
-              ? DateTime(
-                _lastSearchTime!.year,
-                _lastSearchTime!.month,
-                _lastSearchTime!.day,
-              )
-              : null;
-
-      if (lastSearchDay != null && today.isAfter(lastSearchDay)) {
-        _searchesToday = 0;
-        _lastSearchTime = null;
-        _savePersistentStats(); // Save the reset values
-      }
     });
   }
 
   Future<void> _savePersistentStats() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_searchesTodayKey, _searchesToday);
-    if (_lastSearchTime != null) {
-      await prefs.setInt(
-        _lastSearchTimeKey,
-        _lastSearchTime!.millisecondsSinceEpoch,
-      );
-    } else {
-      await prefs.remove(_lastSearchTimeKey);
-    }
     await prefs.setInt(_rightSwipesKey, _rightSwipes);
     await prefs.setInt(_leftSwipesKey, _leftSwipes);
-    await prefs.setInt(_apiSearchesKey, _apiSearches);
   }
 
-  Future<void> _loadInitialJobs() async {
+  /// Fetches page 1 of jobs (1 API credit). No daily hard limit.
+  Future<void> _searchJobs(String query) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastSearchQuery', query);
+    _lastSearchQuery = query;
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _jobs = [];
+      _nextPageUrl = null;
     });
-    final jobs = await JobSearchAPI.fetchRecentJobs(
-      'Software Developer',
-      _locationFilter,
-      _apiKey ?? '', // Pass the API key, default to empty string if null
-      '',
-    );
-    setState(() {
-      _jobs = jobs;
-      _isLoading = false;
-      print('Initial Jobs Loaded: ${_jobs.length}'); // ADD THIS LINE
-    });
-  }
 
-  Future<void> _searchJobs(String query) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final lastSearchDay =
-        _lastSearchTime != null
-            ? DateTime(
-              _lastSearchTime!.year,
-              _lastSearchTime!.month,
-              _lastSearchTime!.day,
-            )
-            : null;
-
-    if (lastSearchDay != null && today.isAfter(lastSearchDay)) {
-      setState(() {
-        _searchesToday = 0;
-        _lastSearchTime = null;
-      });
-    }
-
-    if (_searchesToday < _maxSearchesPerDay) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = '';
-        _searchesToday++;
-        _lastSearchTime = now;
-      });
-      _savePersistentStats(); // Save the updated search count and time
-      final jobs = await JobSearchAPI.fetchRecentJobs(
+    try {
+      final result = await JobSearchAPI.fetchRecentJobs(
         query,
         _locationFilter,
+        _dateFilter,
         _apiKey ?? '',
-        '',
       );
-      setState(() {
-        _jobs = jobs; // Update the _jobs list with the new search results
-        _isLoading = false;
-        print('Search Results Loaded: ${_jobs.length}'); // ADD THIS LINE
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'You have reached your daily search limit (5 searches).',
-          ),
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _jobs = result.jobs;
+          _nextPageUrl = result.nextPageUrl;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _showStatsMenu() async {
+  /// Lazy load: only called when user swipes to the last 2 cards.
+  /// Costs 1 additional credit.
+  Future<void> _loadMoreJobs() async {
+    if (_nextPageUrl == null || _isLoadingMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final result = await JobSearchAPI.fetchNextPage(_nextPageUrl!);
+      if (mounted) {
+        setState(() {
+          _jobs.addAll(result.jobs);
+          _nextPageUrl = result.nextPageUrl;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    }
+  }
+
+  void _showFiltersMenu() async {
     await showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Important for full height
-      backgroundColor: Colors.transparent, // To show the rounded corners
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.5, // 50% of the screen height
+          initialChildSize: 0.5,
           minChildSize: 0.4,
-          maxChildSize: 0.95, // Almost full screen
+          maxChildSize: 0.95,
           builder: (context, scrollController) {
-            return StatsMenu(
-              scrollController: scrollController, // Pass it in!
-              searchesLeft: _maxSearchesPerDay - _searchesToday,
-              rightSwipes: _rightSwipes,
-              leftSwipes: _leftSwipes,
-              apiSearches: _apiSearches,
+            return FiltersMenu(
+              scrollController: scrollController,
               currentLocation: _locationFilter,
-              onLocationChanged: (newLocation) {
+              currentDateFilter: _dateFilter,
+              onFiltersApplied: (newLocation, newDateFilter) {
                 setState(() {
                   _locationFilter = newLocation;
+                  _dateFilter = newDateFilter;
                 });
-                _loadInitialJobs(); // Refresh jobs
+                if (_lastSearchQuery.isNotEmpty) {
+                  _searchJobs(_lastSearchQuery);
+                }
               },
             );
           },
@@ -204,92 +172,106 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleSwipe(Job job, bool isRightSwipe) {
     if (isRightSwipe) {
       _rightSwipes++;
-      _launchApplyLink(job.applyLink);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Applied for ${job.title} at ${job.company}')),
-      );
+      _openJobWebView(job);
     } else {
       _leftSwipes++;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Dismissed ${job.title}')));
     }
-    _savePersistentStats(); // Save the updated swipe counts
+    _savePersistentStats();
   }
 
-  Future<void> _launchApplyLink(String urlString) async {
-    final Uri url = Uri.parse(urlString);
-    if (!await launchUrl(url)) {
+  void _openJobWebView(Job job) {
+    if (job.applyLink.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch the apply link.')),
+        const SnackBar(content: Text('No application link available for this job')),
       );
+      return;
     }
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => JobWebViewScreen(
+          url: job.applyLink,
+          title: job.company.isNotEmpty ? job.company : 'Job Application',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<SearchProvider>(
-      create: (_) => SearchProvider(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Job Swipe'),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: _showStatsMenu,
-            ),
-          ],
-        ),
-        bottomNavigationBar: FooterNavigationBar(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Job Swipe'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: _showFiltersMenu,
+          ),
+        ],
+      ),
+      bottomNavigationBar: const FooterNavigationBar(currentIndex: 0),
         body: Column(
           children: [
-            CustomSearchBar(onSearch: _searchJobs),
+            CustomSearchBar(
+              onSearch: _searchJobs,
+              initialQuery: _lastSearchQuery,
+            ),
             Expanded(
-              child:
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _errorMessage.isNotEmpty
-                      ? Center(child: Text(_errorMessage))
-                      : _jobs.isEmpty
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage.isNotEmpty
                       ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('No jobs found or API key not set.'),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _jobs = sampleJobs;
-                                });
-                              },
-                              child: const Text('Use Sample Jobs'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              _errorMessage,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.red),
                             ),
-                          ],
-                        ),
-                      )
-                      : Consumer<SearchProvider>(
-                        builder: (context, searchProvider, child) {
-                          return JobSwipe(
-                            jobs: _jobs,
-                            onSwipe: _handleSwipe,
-                            onTap: (job) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Tapped on ${job.title}'),
+                          ),
+                        )
+                      : _jobs.isEmpty && _lastSearchQuery.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Ready to find your dream job?\nEnter a search above!',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : _jobs.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                          'No jobs found or API key not set.'),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _jobs = sampleJobs;
+                                          });
+                                        },
+                                        child:
+                                            const Text('Use Sample Jobs'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : JobSwipe(
+                                  jobs: _jobs,
+                                  onSwipe: _handleSwipe,
+                                  onTap: (job) {},
+                                  onRefresh: () => _searchJobs(_lastSearchQuery),
+                                  onLoadMore: _nextPageUrl != null ? _loadMoreJobs : null,
+                                  isLoadingMore: _isLoadingMore,
                                 ),
-                              );
-                            },
-                            onRefresh:
-                                () => _searchJobs(searchProvider.searchQuery),
-                          );
-                        },
-                      ),
             ),
           ],
         ),
-      ),
     );
   }
 }

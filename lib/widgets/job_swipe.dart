@@ -115,6 +115,8 @@ class JobSwipe extends StatefulWidget {
   final SwipeCallback onSwipe;
   final JobTapCallback onTap;
   final VoidCallback onRefresh;
+  final VoidCallback? onLoadMore; // Called when nearing the end of current jobs
+  final bool isLoadingMore; // Show indicator that more jobs are loading
 
   const JobSwipe({
     super.key,
@@ -122,6 +124,8 @@ class JobSwipe extends StatefulWidget {
     required this.onSwipe,
     required this.onTap,
     required this.onRefresh,
+    this.onLoadMore,
+    this.isLoadingMore = false,
   });
 
   @override
@@ -130,10 +134,48 @@ class JobSwipe extends StatefulWidget {
 
 class _JobSwipeState extends State<JobSwipe> {
   int currentIndex = 0;
+  bool _loadMoreTriggered = false;
+
+  void _onSwiped() {
+    setState(() => currentIndex++);
+
+    // Trigger lazy load when 2 cards remain (so next page loads before user runs out)
+    final remaining = widget.jobs.length - currentIndex;
+    if (remaining <= 2 && !_loadMoreTriggered && widget.onLoadMore != null) {
+      _loadMoreTriggered = true;
+      widget.onLoadMore!();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant JobSwipe oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset the trigger when new jobs arrive (list grew)
+    if (widget.jobs.length > oldWidget.jobs.length) {
+      _loadMoreTriggered = false;
+    }
+    // Reset index if jobs list was completely replaced (new search)
+    if (widget.jobs.length < oldWidget.jobs.length) {
+      currentIndex = 0;
+      _loadMoreTriggered = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (widget.jobs.isEmpty || currentIndex >= widget.jobs.length) {
+      if (widget.isLoadingMore) {
+        return const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text("Loading more jobs…"),
+            ],
+          ),
+        );
+      }
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -145,6 +187,7 @@ class _JobSwipeState extends State<JobSwipe> {
                 widget.onRefresh();
                 setState(() {
                   currentIndex = 0;
+                  _loadMoreTriggered = false;
                 });
               },
               child: const Text("Refresh"),
@@ -157,27 +200,23 @@ class _JobSwipeState extends State<JobSwipe> {
     return Stack(
       children:
           List.generate(
-            (widget.jobs.length - currentIndex).clamp(
-              0,
-              3,
-            ), // Show up to 3 stacked cards
+            (widget.jobs.length - currentIndex).clamp(0, 3),
             (i) => Positioned.fill(
-              // Ensures cards take up full space
               child: SwipeableJobCard(
                 key: ValueKey(currentIndex + i),
                 job: widget.jobs[currentIndex + i],
                 onSwipeRight: () {
                   widget.onSwipe(widget.jobs[currentIndex + i], true);
-                  setState(() => currentIndex++);
+                  _onSwiped();
                 },
                 onSwipeLeft: () {
                   widget.onSwipe(widget.jobs[currentIndex + i], false);
-                  setState(() => currentIndex++);
+                  _onSwiped();
                 },
                 onTap: () => widget.onTap(widget.jobs[currentIndex + i]),
               ),
             ),
-          ).reversed.toList(), // Ensure the top card is last in the stack
+          ).reversed.toList(),
     );
   }
 }
