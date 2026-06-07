@@ -5,6 +5,7 @@ class Job {
   final String description;
   final String location;
   final String salary;
+  final String datePosted;
   final String source;
   final String applyLink;
 
@@ -15,6 +16,7 @@ class Job {
     required this.description,
     required this.location,
     required this.salary,
+    required this.datePosted,
     required this.source,
     required this.applyLink,
   });
@@ -27,6 +29,7 @@ class Job {
       description: json['description'] ?? 'No description available.',
       location: json['location'] ?? 'Unknown location',
       salary: json['salary'] ?? 'Not specified',
+      datePosted: json['datePosted'] ?? 'Not Available',
       source: json['source'] ?? 'Unknown source',
       applyLink: json['applyLink'] ?? '',
     );
@@ -40,6 +43,7 @@ class Job {
       'description': description,
       'location': location,
       'salary': salary,
+      'datePosted': datePosted,
       'source': source,
       'applyLink': applyLink,
     };
@@ -55,6 +59,7 @@ List<Job> sampleJobs = [
     description: 'Develop and maintain Flutter applications.',
     location: 'Remote',
     salary: '\$80,000 - \$100,000',
+    datePosted: '2 days ago',
     source: 'LinkedIn',
     applyLink: 'https://example.com/apply1',
   ),
@@ -65,56 +70,18 @@ List<Job> sampleJobs = [
     description: 'Work on scalable backend systems.',
     location: 'San Francisco, CA',
     salary: '\$90,000 - \$120,000',
+    datePosted: '1 week ago',
     source: 'Indeed',
     applyLink: 'https://example.com/apply2',
   ),
   Job(
-    title: 'Softwre Developer',
+    title: 'Software Developer',
     company: 'TechCorp',
     logoUrl: 'https://example.com/logo1.png',
-    description: 'Develop and maintain Flutter applications.',
+    description: 'Develop and maintain applications.',
     location: 'Remote',
     salary: '\$80,000 - \$100,000',
-    source: 'LinkedIn',
-    applyLink: 'https://example.com/apply1',
-  ),
-  Job(
-    title: 'IOS Developer',
-    company: 'TechCorp',
-    logoUrl: 'https://example.com/logo1.png',
-    description: 'Develop and maintain Flutter applications.',
-    location: 'Remote',
-    salary: '\$80,000 - \$100,000',
-    source: 'LinkedIn',
-    applyLink: 'https://example.com/apply1',
-  ),
-  Job(
-    title: 'Android Developer',
-    company: 'TechCorp',
-    logoUrl: 'https://example.com/logo1.png',
-    description: 'Develop and maintain Flutter applications.',
-    location: 'Remote',
-    salary: '\$80,000 - \$100,000',
-    source: 'LinkedIn',
-    applyLink: 'https://example.com/apply1',
-  ),
-  Job(
-    title: 'Game Developer',
-    company: 'TechCorp',
-    logoUrl: 'https://example.com/logo1.png',
-    description: 'Develop and maintain Flutter applications.',
-    location: 'Remote',
-    salary: '\$80,000 - \$100,000',
-    source: 'LinkedIn',
-    applyLink: 'https://example.com/apply1',
-  ),
-  Job(
-    title: 'Building Developer',
-    company: 'TechCorp',
-    logoUrl: 'https://example.com/logo1.png',
-    description: 'Develop and maintain Flutter applications.',
-    location: 'Remote',
-    salary: '\$80,000 - \$100,000',
+    datePosted: '3 hours ago',
     source: 'LinkedIn',
     applyLink: 'https://example.com/apply1',
   ),
