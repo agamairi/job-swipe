@@ -48,7 +48,9 @@ dependencies:
   html: ^0.15.5+1
   flutter_dotenv: ^6.0.1
   http: ^1.6.0
-  webview_flutter: ^4.13.1
+  csv: ^8.0.0
+  share_plus: ^12.0.2
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
