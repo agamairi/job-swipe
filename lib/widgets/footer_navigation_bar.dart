@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:job_swipe/screens/home_screen.dart';
 import 'package:job_swipe/screens/profile_page.dart';
 import 'package:job_swipe/screens/sources_page.dart';
+import 'package:job_swipe/screens/tracked_jobs_screen.dart';
 
 class FooterNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -24,6 +25,9 @@ class FooterNavigationBar extends StatelessWidget {
             destination = const SourcesPage();
             break;
           case 2:
+            destination = const TrackedJobsScreen();
+            break;
+          case 3:
             destination = const ProfilePage();
             break;
           default:
@@ -51,6 +55,11 @@ class FooterNavigationBar extends StatelessWidget {
           icon: Icon(Icons.api_outlined),
           selectedIcon: Icon(Icons.api_rounded),
           label: 'Sources',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.bookmarks_outlined),
+          selectedIcon: Icon(Icons.bookmarks_rounded),
+          label: 'Tracked',
         ),
         NavigationDestination(
           icon: Icon(Icons.person_outline),

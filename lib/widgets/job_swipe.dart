@@ -11,6 +11,7 @@ class SwipeableJobCard extends StatefulWidget {
   final VoidCallback onSwipeRight;
   final VoidCallback onSwipeLeft;
   final VoidCallback onTap;
+  final VoidCallback onSave;
 
   const SwipeableJobCard({
     super.key,
@@ -18,6 +19,7 @@ class SwipeableJobCard extends StatefulWidget {
     required this.onSwipeRight,
     required this.onSwipeLeft,
     required this.onTap,
+    required this.onSave,
   });
 
   @override
@@ -102,7 +104,7 @@ class _SwipeableJobCardState extends State<SwipeableJobCard>
         offset: _offset,
         child: SizedBox.expand(
           // Ensure it takes all available space
-          child: JobCard(job: widget.job, onTap: widget.onTap),
+          child: JobCard(job: widget.job, onTap: widget.onTap, onSave: widget.onSave),
         ),
       ),
     );
@@ -114,6 +116,7 @@ class JobSwipe extends StatefulWidget {
   final List<Job> jobs;
   final SwipeCallback onSwipe;
   final JobTapCallback onTap;
+  final JobTapCallback onSave;
   final VoidCallback onRefresh;
   final VoidCallback? onLoadMore; // Called when nearing the end of current jobs
   final bool isLoadingMore; // Show indicator that more jobs are loading
@@ -123,6 +126,7 @@ class JobSwipe extends StatefulWidget {
     required this.jobs,
     required this.onSwipe,
     required this.onTap,
+    required this.onSave,
     required this.onRefresh,
     this.onLoadMore,
     this.isLoadingMore = false,
@@ -214,6 +218,10 @@ class _JobSwipeState extends State<JobSwipe> {
                   _onSwiped();
                 },
                 onTap: () => widget.onTap(widget.jobs[currentIndex + i]),
+                onSave: () {
+                  widget.onSave(widget.jobs[currentIndex + i]);
+                  _onSwiped();
+                },
               ),
             ),
           ).reversed.toList(),

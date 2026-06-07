@@ -5,9 +5,9 @@ import 'package:job_swipe/widgets/footer_navigation_bar.dart';
 import 'package:job_swipe/widgets/job_swipe.dart';
 import 'package:job_swipe/widgets/search_bar.dart';
 import 'package:job_swipe/widgets/filters_menu.dart';
-import 'package:job_swipe/screens/job_webview_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:job_swipe/database/database_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +50,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _lastSearchQuery = prefs.getString('lastSearchQuery') ?? '';
 
     if (_lastSearchQuery.isNotEmpty) {
+      final db = DatabaseHelper();
+      final history = await db.getRecentSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter);
+      if (history != null) {
+        final cached = await db.getCachedJobs();
+        if (cached.isNotEmpty) {
+          setState(() {
+            _jobs = cached;
+            _nextPageUrl = history['nextPageUrl'] as String?;
+            _isLoading = false;
+          });
+          return;
+        } else if (history['nextPageUrl'] != null && history['nextPageUrl'].toString().isNotEmpty) {
+          _nextPageUrl = history['nextPageUrl'] as String?;
+          _loadMoreJobs();
+          return;
+        }
+      }
       _searchJobs(_lastSearchQuery);
     } else {
       setState(() => _isLoading = false);
@@ -90,6 +107,22 @@ class _HomeScreenState extends State<HomeScreen> {
       _nextPageUrl = null;
     });
 
+    final db = DatabaseHelper();
+    final history = await db.getRecentSearchHistory(query, _locationFilter, _dateFilter);
+    if (history != null) {
+      final cached = await db.getCachedJobs();
+      if (cached.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _jobs = cached;
+            _nextPageUrl = history['nextPageUrl'] as String?;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    }
+
     try {
       final result = await JobSearchAPI.fetchRecentJobs(
         query,
@@ -97,9 +130,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _dateFilter,
         _apiKey ?? '',
       );
+      
+      await db.clearCachedJobs();
+      await db.insertCachedJobs(result.jobs);
+      await db.saveSearchHistory(query, _locationFilter, _dateFilter, result.nextPageUrl);
+      
+      final savedJobs = await db.getCachedJobs(); // Load back from DB to ensure status is handled
+
       if (mounted) {
         setState(() {
-          _jobs = result.jobs;
+          _jobs = savedJobs.isNotEmpty ? savedJobs : result.jobs;
           _nextPageUrl = result.nextPageUrl;
           _isLoading = false;
         });
@@ -123,9 +163,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final result = await JobSearchAPI.fetchNextPage(_nextPageUrl!);
+      final db = DatabaseHelper();
+      await db.insertCachedJobs(result.jobs);
+      await db.saveSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter, result.nextPageUrl);
+      
+      // Since we just inserted them, they should be in 'cached' status. We fetch the whole cache or just append the newly inserted
+      // Actually we just append the result.jobs, but we should make sure they have their ID.
+      // Getting cached jobs might return all previous ones too if they haven't been swiped.
+      // So we can just fetch all cached jobs again to be safe and accurate with the DB.
+      final allCached = await db.getCachedJobs();
+
       if (mounted) {
         setState(() {
-          _jobs.addAll(result.jobs);
+          _jobs = allCached; // Replace with all cached so we don't duplicate
           _nextPageUrl = result.nextPageUrl;
           _isLoadingMore = false;
         });
@@ -169,17 +219,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _handleSwipe(Job job, bool isRightSwipe) {
+  void _handleSwipe(Job job, bool isRightSwipe) async {
+    final db = DatabaseHelper();
     if (isRightSwipe) {
       _rightSwipes++;
+      await db.updateJobStatus(job.id, 'applied');
       _openJobWebView(job);
     } else {
       _leftSwipes++;
+      await db.updateJobStatus(job.id, 'discarded');
     }
     _savePersistentStats();
   }
 
-  void _openJobWebView(Job job) {
+  void _handleSave(Job job) async {
+    final db = DatabaseHelper();
+    await db.updateJobStatus(job.id, 'saved');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Job saved!')),
+    );
+  }
+
+  void _openJobWebView(Job job) async {
     if (job.applyLink.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No application link available for this job')),
@@ -187,14 +248,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => JobWebViewScreen(
-          url: job.applyLink,
-          title: job.company.isNotEmpty ? job.company : 'Job Application',
-        ),
-      ),
-    );
+    final uri = Uri.parse(job.applyLink);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch the application link')),
+        );
+      }
+    }
   }
 
   @override
@@ -265,7 +328,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   jobs: _jobs,
                                   onSwipe: _handleSwipe,
                                   onTap: (job) {},
-                                  onRefresh: () => _searchJobs(_lastSearchQuery),
+                                  onSave: _handleSave,
+                                  onRefresh: () async {
+                                    final db = DatabaseHelper();
+                                    await db.clearCachedJobs();
+                                    _searchJobs(_lastSearchQuery);
+                                  },
                                   onLoadMore: _nextPageUrl != null ? _loadMoreJobs : null,
                                   isLoadingMore: _isLoadingMore,
                                 ),

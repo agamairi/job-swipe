@@ -116,7 +116,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('User Profile'), centerTitle: true),
-      bottomNavigationBar: const FooterNavigationBar(currentIndex: 2),
+      bottomNavigationBar: const FooterNavigationBar(currentIndex: 3),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
