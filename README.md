@@ -8,17 +8,25 @@ A mobile app that allows users to browse and apply for jobs using a Tinder-style
 <div align="center">
   <table>
     <tr>
-      <td><img src="screenshots/home_screen.jpg" alt="Home Screen" width="200"/></td>
-      <td><img src="screenshots/stats_page_1.jpg" alt="Swipe View" width="200"/></td>
+      <td><b>1. Home Screen</b></td>
+      <td><b>2. API Config & Settings</b></td>
+      <td><b>3. Swipe Analytics Dashboard</b></td>
     </tr>
     <tr>
-      <td><img src="screenshots/stats_page_2.jpg" alt="Profile Page" width="200"/></td>
-      <td><img src="screenshots/profile_page.jpg" alt="Resume Parser" width="200"/></td>
+      <td><img src="screenshots/home_screen.jpg" alt="Home Screen" width="180"/></td>
+      <td><img src="screenshots/stats_page_1.jpg" alt="API Settings" width="180"/></td>
+      <td><img src="screenshots/stats_page_2.jpg" alt="Swipe Statistics" width="180"/></td>
+    </tr>
+    <tr>
+      <td><b>4. Tracked Jobs (Saved/Applied)</b></td>
+      <td colspan="2" align="center"><b>5. Profile & Resume Parser</b></td>
+    </tr>
+    <tr>
+      <td><img src="screenshots/tracked_jobs.jpg" alt="Tracked Jobs" width="180"/></td>
+      <td colspan="2" align="center"><img src="screenshots/profile_page.jpg" alt="Profile & Resume" width="180"/></td>
     </tr>
   </table>
 </div>
-
----
 
 ---
 
@@ -26,54 +34,44 @@ A mobile app that allows users to browse and apply for jobs using a Tinder-style
 
 ### 🔥 Job Search & Swipe UI
 - **Search Bar** – Filter job listings by job title, location, or keywords.
-- **Job Cards** – Show job title, company logo, description, and link.
+- **Job Cards** – Show job title, company logo, salary, description, and source metadata.
 - **Swipe Actions**:
-  - **Swipe Left** – Discards the job (excluded from stats).
-  - **Swipe Right** – Opens the job posting URL directly (no auto-fill).
-  - **Tap-to-Expand** – *(In development)* View full job details.
+  - **Swipe Left** – Discards the job (persisted in SQLite, excluded from future searches).
+  - **Swipe Right** – Launches the in-app default browser to the job posting URL (saving/applying the job).
+  - **Tap Card** – Open the full job details on a dedicated details screen.
 
-### 🌐 Custom Job API Input
-- **User-Provided API** – Input your own API URL and key.
-- **Search Limit Control** – Avoid exhausting free-tier limits.
-- **Flexible Formatting** – API response parser ensures consistent job cards.
+### 🗄️ Local Database Caching & History (SQLite)
+- **Search Caching** – Search results are cached locally in SQLite. Caches expire automatically after 24 hours or when all retrieved jobs are swiped.
+- **State Retention** – The app stores already seen, saved, and discarded jobs. Tapping back, closing, or reopening the app will never present you with duplicate job cards or jobs you have already swiped.
 
-### 📈 Interaction Statistics
-- Tracks user engagement:
-  - Total swipes.
-  - Swipes left.
-  - Swipes right.
+### 📂 Tracked Jobs Management
+- **Saved & Applied Tabs** – Access jobs in two piles inside the **Tracked** screen.
+- **Job Details View** – Tapping a saved or applied job opens a custom detailed page displaying the job's title, company logo, description, and metadata.
+- **Save-to-Apply Conversion** – Tapping "Apply Now" from your **Saved** list transitions the job to the **Applied** list automatically.
+- **Export to CSV** – A download action on the **Applied** tab exports all applied jobs (job title, link, company, salary, location) to a CSV file and opens the native share sheet.
+
+### 🌐 Native Default Browser Integration
+- **Custom In-App Browsing** – Integrates `url_launcher` utilizing native Android Custom Tabs & iOS Safari View Controller.
+- **Safe & Feature-Rich** – Retains all features of your default browser (autofill, passwords, Google Sign-in, navigation history) while keeping you inside the app loop.
 
 ### 🏠 Profile & Resume Management
 - **User Profile** – Edit personal info, work history, and education.
-  - Name
-  - Work Experience (title, duration, description)
-  - Education (institute, degree, year)
-- **Resume Upload** – Accepts PDF, DOC, and standard formats.
-- **Resume Parsing & Editing** – Parsed resume shown in editable format for review and copy-paste.
-
-### 📂 Local Storage
-- **Secure Storage** – Profile and resume stored locally via SQLite or Shared Preferences.
-- **Swipe Tracking** – *(Planned)* No caching or local history yet.
+- **Resume Upload** – Upload resumes (PDF, Word formats).
+- **Resume Parsing & Editing** – Parsed content automatically fills out the education and work history forms for review.
 
 ### 🎨 UI & Animations
 - Built with **Material Design 3**.
-- Smooth swipe gestures and transitions.
-- Fully supports **Dark Mode**.
-
-### 🛠️ Additional Features
-- **Settings Panel** – Customize API keys, control search limits, toggle filters.
-- **Robust Error Handling** – Graceful degradation on network/API failure.
-- **Security** – All personal data is stored securely on-device.
-- **Job History** – *(Planned)* Add access to previous swipes and favorites.
+- Smooth deck swipe gestures, bookmark transitions, and tab animations.
+- Full dark mode and custom launcher branding icons for iOS and Android.
 
 ---
 
 ## 📌 Tech Stack
 - **Flutter SDK** – Cross-platform UI toolkit.
-- **Dart** – Application logic and UI code.
-- **SQLite / Shared Preferences** – Local persistence.
-- **Dio / HTTP** – Networking layer.
-- **Flutter Animations** – UI transitions and swipe effects.
+- **Dart** – Logic and user interface.
+- **SQLite / SharedPreferences** – Local data storage and session state.
+- **Dio / HTTP** – Network APIs.
+- **fl_chart** – Statistics analytics dashboard rendering.
 
 ---
 
@@ -81,15 +79,15 @@ A mobile app that allows users to browse and apply for jobs using a Tinder-style
 
 ### 🔧 Prerequisites
 Ensure you have:
-- Flutter SDK
+- Flutter SDK (3.32.5+)
 - Dart
-- Android Studio or VS Code (with Flutter plugin)
+- Android Studio / Xcode (with simulators/connected debug devices)
 - Git
 
 ### 🚀 Clone the Repository
 ```bash
 git clone https://github.com/agamairi/job-swipe.git
-cd job-application-app
+cd job-swipe
 ```
 
 ### 📦 Install Dependencies
@@ -105,9 +103,8 @@ flutter run
 ---
 
 ## 🔥 Features in Development
-- Tap-to-Expand Job Details
-- Improved Resume Parsing
-- Job History & Favorites
+- AI-based job match recommendations.
+- Remote profile synchronization.
 
 ---
 
@@ -116,31 +113,10 @@ Want to contribute? Fork the repo, create a new branch, and submit a pull reques
 
 ---
 
-## 🛠️ Troubleshooting
-
-### 🔴 App Fails to Start
-- Ensure dependencies are installed:
-```bash
-flutter pub get
-```
-- Check Flutter version:
-```bash
-flutter --version
-```
-
-### 🔴 Jobs Not Loading
-- Verify internet connectivity.
-- Check your custom API URL and key.
-- Run in verbose mode:
-```bash
-flutter run --verbose
-```
-
----
-
 ## 📜 License
 MIT License – use freely with attribution.
 
 ## 📞 Contact
 For questions, feedback, or contributions, open an issue on GitHub.
+
 
