@@ -1,4 +1,5 @@
 class Job {
+  final String id;
   final String title;
   final String company;
   final String logoUrl;
@@ -10,6 +11,7 @@ class Job {
   final String applyLink;
 
   Job({
+    required this.id,
     required this.title,
     required this.company,
     required this.logoUrl,
@@ -23,6 +25,7 @@ class Job {
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
+      id: json['id'] ?? '',
       title: json['title'] ?? 'Unknown',
       company: json['company'] ?? 'Unknown',
       logoUrl: json['logoUrl'] ?? '',
@@ -37,6 +40,7 @@ class Job {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'company': company,
       'logoUrl': logoUrl,
@@ -53,6 +57,7 @@ class Job {
 // Sample job data for testing
 List<Job> sampleJobs = [
   Job(
+    id: 'sample-1',
     title: 'Flutter Developer',
     company: 'TechCorp',
     logoUrl: 'https://example.com/logo1.png',
@@ -64,6 +69,7 @@ List<Job> sampleJobs = [
     applyLink: 'https://example.com/apply1',
   ),
   Job(
+    id: 'sample-2',
     title: 'Backend Engineer',
     company: 'CodeWorks',
     logoUrl: 'https://example.com/logo2.png',
@@ -75,6 +81,7 @@ List<Job> sampleJobs = [
     applyLink: 'https://example.com/apply2',
   ),
   Job(
+    id: 'sample-3',
     title: 'Software Developer',
     company: 'TechCorp',
     logoUrl: 'https://example.com/logo1.png',

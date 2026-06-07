@@ -255,9 +255,17 @@ class JobSearchAPI {
           source = source.substring(4);
         }
 
+        String jobId = _extractString(job, ['job_id', 'id']) ?? '';
+        if (jobId.isEmpty) {
+          // Generate a fallback ID based on title, company, and location to ensure uniqueness
+          final rawId = '${title}_${company}_$location';
+          jobId = base64UrlEncode(utf8.encode(rawId));
+        }
+
         if (title != null && company != null) {
           jobList.add(
             Job(
+              id: jobId,
               title: title,
               company: company,
               logoUrl: logoUrl,
@@ -304,8 +312,15 @@ class JobSearchAPI {
               '';
       final source = 'Custom Source';
 
+      String jobId = _extractString(jobData, ['job_id', 'id']) ?? '';
+      if (jobId.isEmpty) {
+        final rawId = '${title}_${company}_$location';
+        jobId = base64UrlEncode(utf8.encode(rawId));
+      }
+
       if (title != null && company != null) {
         return Job(
+          id: jobId,
           title: title,
           company: company,
           logoUrl: logoUrl,
