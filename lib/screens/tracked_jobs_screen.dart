@@ -112,6 +112,76 @@ class _TrackedJobsScreenState extends State<TrackedJobsScreen> with SingleTicker
     _loadJobs();
   }
 
+  void _deleteIndividualJob(Job job, bool isApplied) async {
+    final db = DatabaseHelper();
+    await db.deleteJob(job.id);
+    _loadJobs();
+
+    if (mounted) {
+      final status = isApplied ? 'applied' : 'saved';
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Removed "${job.title}" from $status jobs'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () async {
+              await db.restoreJob(job, status);
+              _loadJobs();
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showClearAllConfirmation(bool isSaved) async {
+    final theme = Theme.of(context);
+    final status = isSaved ? 'saved' : 'applied';
+    final count = isSaved ? _savedJobs.length : _appliedJobs.length;
+    if (count == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No $status jobs to clear')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Clear All ${isSaved ? 'Saved' : 'Applied'} Jobs?'),
+          content: Text('This will delete all $count jobs from your ${isSaved ? 'saved' : 'applied'} list. This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Clear All'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      final db = DatabaseHelper();
+      await db.clearJobsByStatus(status);
+      _loadJobs();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cleared all $status jobs')),
+        );
+      }
+    }
+  }
+
   Widget _buildJobList(List<Job> jobs, String emptyMessage, bool isApplied) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -165,6 +235,14 @@ class _TrackedJobsScreenState extends State<TrackedJobsScreen> with SingleTicker
                 Text(job.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               ],
             ),
+            trailing: IconButton(
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              tooltip: 'Delete',
+              onPressed: () => _deleteIndividualJob(job, isApplied),
+            ),
             onTap: () => _openJob(job, isApplied),
           ),
         );
@@ -185,6 +263,11 @@ class _TrackedJobsScreenState extends State<TrackedJobsScreen> with SingleTicker
               tooltip: 'Export CSV',
               onPressed: _exportToCsv,
             ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded),
+            tooltip: _currentTabIndex == 0 ? 'Clear Saved Jobs' : 'Clear Applied Jobs',
+            onPressed: () => _showClearAllConfirmation(_currentTabIndex == 0),
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,

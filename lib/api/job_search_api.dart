@@ -55,17 +55,31 @@ class JobSearchAPI {
     final uri = Uri.parse(apiUrl).replace(queryParameters: parameters);
     print('Fetching jobs: $uri');
 
-    return _executeRequest(uri);
+    final result = await _executeRequest(uri);
+    if (dateFilter.isNotEmpty) {
+      final filteredJobs = result.jobs
+          .where((job) => _matchesDateFilter(job.datePosted, dateFilter))
+          .toList();
+      return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
+    }
+    return result;
   }
 
   /// Fetches the next page of jobs using the URL from a previous response.
   /// Costs 1 API credit — only call this when the user actually needs more jobs.
-  static Future<JobSearchResult> fetchNextPage(String nextPageUrl) async {
+  static Future<JobSearchResult> fetchNextPage(String nextPageUrl, {String dateFilter = ''}) async {
     // The next_page_url already contains all required parameters including q and start
     final uri = Uri.parse(nextPageUrl);
     print('Fetching next page URL: $uri');
 
-    return _executeRequest(uri);
+    final result = await _executeRequest(uri);
+    if (dateFilter.isNotEmpty) {
+      final filteredJobs = result.jobs
+          .where((job) => _matchesDateFilter(job.datePosted, dateFilter))
+          .toList();
+      return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
+    }
+    return result;
   }
 
   /// Shared request execution logic.
@@ -345,5 +359,62 @@ class JobSearchAPI {
       }
     }
     return null;
+  }
+
+  static int? _parseDatePostedToDays(String datePosted) {
+    final clean = datePosted.toLowerCase().trim();
+    if (clean.contains('hour') ||
+        clean.contains('minute') ||
+        clean.contains('second') ||
+        clean.contains('now')) {
+      return 0;
+    }
+    if (clean.contains('yesterday')) {
+      return 1;
+    }
+
+    final RegExp numRegExp = RegExp(r'\d+');
+    final match = numRegExp.firstMatch(clean);
+    if (match == null) {
+      if (clean.contains('a day') || clean.contains('one day')) return 1;
+      if (clean.contains('a week') || clean.contains('one week')) return 7;
+      if (clean.contains('a month') || clean.contains('one month')) return 30;
+      return null; // Unknown / Not Available
+    }
+
+    final val = int.tryParse(match.group(0)!) ?? 1;
+    if (clean.contains('day')) {
+      return val;
+    } else if (clean.contains('week')) {
+      return val * 7;
+    } else if (clean.contains('month')) {
+      return val * 30;
+    }
+
+    return null;
+  }
+
+  static bool _matchesDateFilter(String datePosted, String dateFilter) {
+    if (dateFilter.isEmpty) return true;
+    final days = _parseDatePostedToDays(datePosted);
+    if (days == null) return true; // Keep if unable to parse
+
+    switch (dateFilter) {
+      case 'hour':
+        return datePosted.toLowerCase().contains('minute') ||
+            datePosted.toLowerCase().contains('second') ||
+            (datePosted.toLowerCase().contains('hour') &&
+                (int.tryParse(RegExp(r'\d+').firstMatch(datePosted)?.group(0) ?? '') ?? 1) <= 1);
+      case 'today':
+        return days <= 1;
+      case '3days':
+        return days <= 3;
+      case 'week':
+        return days <= 7;
+      case 'month':
+        return days <= 30;
+      default:
+        return true;
+    }
   }
 }

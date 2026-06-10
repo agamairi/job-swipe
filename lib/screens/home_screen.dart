@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final db = DatabaseHelper();
       final history = await db.getRecentSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter);
       if (history != null) {
-        final cached = await db.getCachedJobs();
+        final cached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter);
         if (cached.isNotEmpty) {
           setState(() {
             _jobs = cached;
@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Fetches page 1 of jobs (1 API credit). No daily hard limit.
-  Future<void> _searchJobs(String query) async {
+  Future<void> _searchJobs(String query, {bool forceRefresh = false}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('lastSearchQuery', query);
     _lastSearchQuery = query;
@@ -108,18 +108,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     final db = DatabaseHelper();
-    final history = await db.getRecentSearchHistory(query, _locationFilter, _dateFilter);
-    if (history != null) {
-      final cached = await db.getCachedJobs();
-      if (cached.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _jobs = cached;
-            _nextPageUrl = history['nextPageUrl'] as String?;
-            _isLoading = false;
-          });
+    if (!forceRefresh) {
+      final history = await db.getRecentSearchHistory(query, _locationFilter, _dateFilter);
+      if (history != null) {
+        final cached = await db.getCachedJobs(query, _locationFilter, _dateFilter);
+        if (cached.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _jobs = cached;
+              _nextPageUrl = history['nextPageUrl'] as String?;
+              _isLoading = false;
+            });
+          }
+          return;
         }
-        return;
       }
     }
 
@@ -131,11 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _apiKey ?? '',
       );
       
-      await db.clearCachedJobs();
-      await db.insertCachedJobs(result.jobs);
+      await db.clearCachedJobs(query: query, locationFilter: _locationFilter, dateFilter: _dateFilter);
+      await db.insertCachedJobs(result.jobs, query, _locationFilter, _dateFilter);
       await db.saveSearchHistory(query, _locationFilter, _dateFilter, result.nextPageUrl);
       
-      final savedJobs = await db.getCachedJobs(); // Load back from DB to ensure status is handled
+      final savedJobs = await db.getCachedJobs(query, _locationFilter, _dateFilter); // Load back from DB to ensure status is handled
 
       if (mounted) {
         setState(() {
@@ -162,16 +164,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isLoadingMore = true);
 
     try {
-      final result = await JobSearchAPI.fetchNextPage(_nextPageUrl!);
+      final result = await JobSearchAPI.fetchNextPage(_nextPageUrl!, dateFilter: _dateFilter);
       final db = DatabaseHelper();
-      await db.insertCachedJobs(result.jobs);
+      await db.insertCachedJobs(result.jobs, _lastSearchQuery, _locationFilter, _dateFilter);
       await db.saveSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter, result.nextPageUrl);
       
       // Since we just inserted them, they should be in 'cached' status. We fetch the whole cache or just append the newly inserted
       // Actually we just append the result.jobs, but we should make sure they have their ID.
       // Getting cached jobs might return all previous ones too if they haven't been swiped.
       // So we can just fetch all cached jobs again to be safe and accurate with the DB.
-      final allCached = await db.getCachedJobs();
+      final allCached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter);
 
       if (mounted) {
         setState(() {
@@ -209,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _dateFilter = newDateFilter;
                 });
                 if (_lastSearchQuery.isNotEmpty) {
-                  _searchJobs(_lastSearchQuery);
+                  _searchJobs(_lastSearchQuery, forceRefresh: true);
                 }
               },
             );
@@ -267,6 +269,19 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Job Swipe'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh Search',
+            onPressed: () {
+              if (_lastSearchQuery.isNotEmpty) {
+                _searchJobs(_lastSearchQuery, forceRefresh: true);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a search query first')),
+                );
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.tune_rounded),
             onPressed: _showFiltersMenu,
@@ -331,8 +346,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   onSave: _handleSave,
                                   onRefresh: () async {
                                     final db = DatabaseHelper();
-                                    await db.clearCachedJobs();
-                                    _searchJobs(_lastSearchQuery);
+                                    await db.clearCachedJobs(
+                                      query: _lastSearchQuery,
+                                      locationFilter: _locationFilter,
+                                      dateFilter: _dateFilter,
+                                    );
+                                    _searchJobs(_lastSearchQuery, forceRefresh: true);
                                   },
                                   onLoadMore: _nextPageUrl != null ? _loadMoreJobs : null,
                                   isLoadingMore: _isLoadingMore,
