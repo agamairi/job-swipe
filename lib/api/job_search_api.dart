@@ -19,8 +19,9 @@ class JobSearchAPI {
     String query,
     String locationFilter,
     String dateFilter,
-    String apiKeyFromUi,
-  ) async {
+    String apiKeyFromUi, {
+    List<String> providerFilters = const [],
+  }) async {
     final prefs = await SharedPreferences.getInstance();
 
     String apiUrl = prefs.getString('API_URL') ??
@@ -37,8 +38,18 @@ class JobSearchAPI {
           'API Key is missing. Please set it in Sources page or .env file.');
     }
 
+    String searchQuery = query;
+    if (providerFilters.isNotEmpty) {
+      final providersString = providerFilters.join(' OR ');
+      if (!searchQuery.toLowerCase().contains('via ')) {
+        searchQuery = searchQuery.isEmpty
+            ? providersString
+            : '$searchQuery via $providersString';
+      }
+    }
+
     final parameters = <String, String>{
-      'q': query,
+      'q': searchQuery,
       'location': locationFilter,
       'api_key': apiKey,
     };
@@ -56,30 +67,44 @@ class JobSearchAPI {
     print('Fetching jobs: $uri');
 
     final result = await _executeRequest(uri);
+    List<Job> filteredJobs = result.jobs;
     if (dateFilter.isNotEmpty) {
-      final filteredJobs = result.jobs
+      filteredJobs = filteredJobs
           .where((job) => _matchesDateFilter(job.datePosted, dateFilter))
           .toList();
-      return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
     }
-    return result;
+    if (providerFilters.isNotEmpty) {
+      filteredJobs = filteredJobs
+          .where((job) => _matchesProviderFilter(job.source, providerFilters))
+          .toList();
+    }
+    return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
   }
 
   /// Fetches the next page of jobs using the URL from a previous response.
   /// Costs 1 API credit — only call this when the user actually needs more jobs.
-  static Future<JobSearchResult> fetchNextPage(String nextPageUrl, {String dateFilter = ''}) async {
+  static Future<JobSearchResult> fetchNextPage(
+    String nextPageUrl, {
+    String dateFilter = '',
+    List<String> providerFilters = const [],
+  }) async {
     // The next_page_url already contains all required parameters including q and start
     final uri = Uri.parse(nextPageUrl);
     print('Fetching next page URL: $uri');
 
     final result = await _executeRequest(uri);
+    List<Job> filteredJobs = result.jobs;
     if (dateFilter.isNotEmpty) {
-      final filteredJobs = result.jobs
+      filteredJobs = filteredJobs
           .where((job) => _matchesDateFilter(job.datePosted, dateFilter))
           .toList();
-      return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
     }
-    return result;
+    if (providerFilters.isNotEmpty) {
+      filteredJobs = filteredJobs
+          .where((job) => _matchesProviderFilter(job.source, providerFilters))
+          .toList();
+    }
+    return JobSearchResult(jobs: filteredJobs, nextPageUrl: result.nextPageUrl);
   }
 
   /// Shared request execution logic.
@@ -416,5 +441,11 @@ class JobSearchAPI {
       default:
         return true;
     }
+  }
+
+  static bool _matchesProviderFilter(String source, List<String> providerFilters) {
+    if (providerFilters.isEmpty) return true;
+    final sourceLower = source.toLowerCase();
+    return providerFilters.any((filter) => sourceLower.contains(filter.toLowerCase()));
   }
 }

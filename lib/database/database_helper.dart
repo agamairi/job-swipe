@@ -22,7 +22,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'userprofile.db');
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -43,6 +43,10 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE jobs ADD COLUMN searchQuery TEXT');
       await db.execute('ALTER TABLE jobs ADD COLUMN locationFilter TEXT');
       await db.execute('ALTER TABLE jobs ADD COLUMN dateFilter TEXT');
+    }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE jobs ADD COLUMN providerFilter TEXT');
+      await db.execute('ALTER TABLE search_history ADD COLUMN providerFilter TEXT');
     }
   }
 
@@ -75,7 +79,8 @@ class DatabaseHelper {
         status TEXT,
         searchQuery TEXT,
         locationFilter TEXT,
-        dateFilter TEXT
+        dateFilter TEXT,
+        providerFilter TEXT
       )
     ''');
   }
@@ -87,6 +92,7 @@ class DatabaseHelper {
         query TEXT,
         locationFilter TEXT,
         dateFilter TEXT,
+        providerFilter TEXT,
         nextPageUrl TEXT,
         timestamp INTEGER
       )
@@ -121,7 +127,13 @@ class DatabaseHelper {
 
   // --- Jobs ---
 
-  Future<void> insertCachedJobs(List<Job> jobs, String query, String locationFilter, String dateFilter) async {
+  Future<void> insertCachedJobs(
+    List<Job> jobs,
+    String query,
+    String locationFilter,
+    String dateFilter, [
+    String providerFilter = '',
+  ]) async {
     final db = await database;
     final batch = db.batch();
     for (var job in jobs) {
@@ -130,18 +142,25 @@ class DatabaseHelper {
       data['searchQuery'] = query;
       data['locationFilter'] = locationFilter;
       data['dateFilter'] = dateFilter;
+      data['providerFilter'] = providerFilter;
       // Use insert with conflict algorithm ignore to not override user's saved/applied/discarded jobs
       batch.insert('jobs', data, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
     await batch.commit(noResult: true);
   }
 
-  Future<List<Job>> getCachedJobs(String query, String locationFilter, String dateFilter) async {
+  Future<List<Job>> getCachedJobs(
+    String query,
+    String locationFilter,
+    String dateFilter, [
+    String providerFilter = '',
+  ]) async {
     final db = await database;
     final maps = await db.query(
       'jobs',
-      where: 'status = ? AND searchQuery = ? AND locationFilter = ? AND dateFilter = ?',
-      whereArgs: ['cached', query, locationFilter, dateFilter],
+      where:
+          'status = ? AND searchQuery = ? AND locationFilter = ? AND dateFilter = ? AND (providerFilter = ? OR (providerFilter IS NULL AND ? = ""))',
+      whereArgs: ['cached', query, locationFilter, dateFilter, providerFilter, providerFilter],
     );
     return maps.map((e) => Job.fromJson(e)).toList();
   }
@@ -162,13 +181,20 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> clearCachedJobs({String? query, String? locationFilter, String? dateFilter}) async {
+  Future<void> clearCachedJobs({
+    String? query,
+    String? locationFilter,
+    String? dateFilter,
+    String? providerFilter,
+  }) async {
     final db = await database;
     if (query != null && locationFilter != null && dateFilter != null) {
+      final pFilter = providerFilter ?? '';
       await db.delete(
         'jobs',
-        where: 'status = ? AND searchQuery = ? AND locationFilter = ? AND dateFilter = ?',
-        whereArgs: ['cached', query, locationFilter, dateFilter],
+        where:
+            'status = ? AND searchQuery = ? AND locationFilter = ? AND dateFilter = ? AND (providerFilter = ? OR (providerFilter IS NULL AND ? = ""))',
+        whereArgs: ['cached', query, locationFilter, dateFilter, pFilter, pFilter],
       );
     } else {
       await db.delete('jobs', where: 'status = ?', whereArgs: ['cached']);
@@ -194,28 +220,46 @@ class DatabaseHelper {
 
   // --- Search History ---
 
-  Future<void> saveSearchHistory(String query, String locationFilter, String dateFilter, String? nextPageUrl) async {
+  Future<void> saveSearchHistory(
+    String query,
+    String locationFilter,
+    String dateFilter,
+    String? nextPageUrl, [
+    String providerFilter = '',
+  ]) async {
     final db = await database;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    
-    // Clear old history for the same query just in case, or we can just append
-    await db.delete('search_history', where: 'query = ? AND locationFilter = ? AND dateFilter = ?', whereArgs: [query, locationFilter, dateFilter]);
+
+    // Clear old history for the same query and filters
+    await db.delete(
+      'search_history',
+      where:
+          'query = ? AND locationFilter = ? AND dateFilter = ? AND (providerFilter = ? OR (providerFilter IS NULL AND ? = ""))',
+      whereArgs: [query, locationFilter, dateFilter, providerFilter, providerFilter],
+    );
 
     await db.insert('search_history', {
       'query': query,
       'locationFilter': locationFilter,
       'dateFilter': dateFilter,
+      'providerFilter': providerFilter,
       'nextPageUrl': nextPageUrl,
       'timestamp': timestamp,
     });
   }
 
-  Future<Map<String, dynamic>?> getRecentSearchHistory(String query, String locationFilter, String dateFilter) async {
+  Future<Map<String, dynamic>?> getRecentSearchHistory(
+    String query,
+    String locationFilter,
+    String dateFilter, [
+    String providerFilter = '',
+  ]) async {
     final db = await database;
     final maps = await db.query(
       'search_history',
-      where: 'query = ? AND locationFilter = ? AND dateFilter = ?',
-      whereArgs: [query, locationFilter, dateFilter],
+      where:
+          'query = ? AND locationFilter = ? AND dateFilter = ? AND (providerFilter = ? OR (providerFilter IS NULL AND ? = ""))',
+      whereArgs: [query, locationFilter, dateFilter, providerFilter, providerFilter],
       orderBy: 'timestamp DESC',
       limit: 1,
     );

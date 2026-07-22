@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Filters & state
   String _locationFilter = 'Canada';
   String _dateFilter = '';
+  List<String> _providerFilters = [];
   String _lastSearchQuery = '';
   String? _apiKey;
 
@@ -51,9 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_lastSearchQuery.isNotEmpty) {
       final db = DatabaseHelper();
-      final history = await db.getRecentSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter);
+      final providerFilterStr = _providerFilters.join(',');
+      final history = await db.getRecentSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter, providerFilterStr);
       if (history != null) {
-        final cached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter);
+        final cached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter, providerFilterStr);
         if (cached.isNotEmpty) {
           setState(() {
             _jobs = cached;
@@ -108,10 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     final db = DatabaseHelper();
+    final providerFilterStr = _providerFilters.join(',');
     if (!forceRefresh) {
-      final history = await db.getRecentSearchHistory(query, _locationFilter, _dateFilter);
+      final history = await db.getRecentSearchHistory(query, _locationFilter, _dateFilter, providerFilterStr);
       if (history != null) {
-        final cached = await db.getCachedJobs(query, _locationFilter, _dateFilter);
+        final cached = await db.getCachedJobs(query, _locationFilter, _dateFilter, providerFilterStr);
         if (cached.isNotEmpty) {
           if (mounted) {
             setState(() {
@@ -131,13 +134,19 @@ class _HomeScreenState extends State<HomeScreen> {
         _locationFilter,
         _dateFilter,
         _apiKey ?? '',
+        providerFilters: _providerFilters,
       );
       
-      await db.clearCachedJobs(query: query, locationFilter: _locationFilter, dateFilter: _dateFilter);
-      await db.insertCachedJobs(result.jobs, query, _locationFilter, _dateFilter);
-      await db.saveSearchHistory(query, _locationFilter, _dateFilter, result.nextPageUrl);
+      await db.clearCachedJobs(
+        query: query,
+        locationFilter: _locationFilter,
+        dateFilter: _dateFilter,
+        providerFilter: providerFilterStr,
+      );
+      await db.insertCachedJobs(result.jobs, query, _locationFilter, _dateFilter, providerFilterStr);
+      await db.saveSearchHistory(query, _locationFilter, _dateFilter, result.nextPageUrl, providerFilterStr);
       
-      final savedJobs = await db.getCachedJobs(query, _locationFilter, _dateFilter); // Load back from DB to ensure status is handled
+      final savedJobs = await db.getCachedJobs(query, _locationFilter, _dateFilter, providerFilterStr); // Load back from DB to ensure status is handled
 
       if (mounted) {
         setState(() {
@@ -164,16 +173,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isLoadingMore = true);
 
     try {
-      final result = await JobSearchAPI.fetchNextPage(_nextPageUrl!, dateFilter: _dateFilter);
+      final result = await JobSearchAPI.fetchNextPage(
+        _nextPageUrl!,
+        dateFilter: _dateFilter,
+        providerFilters: _providerFilters,
+      );
       final db = DatabaseHelper();
-      await db.insertCachedJobs(result.jobs, _lastSearchQuery, _locationFilter, _dateFilter);
-      await db.saveSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter, result.nextPageUrl);
+      final providerFilterStr = _providerFilters.join(',');
+      await db.insertCachedJobs(result.jobs, _lastSearchQuery, _locationFilter, _dateFilter, providerFilterStr);
+      await db.saveSearchHistory(_lastSearchQuery, _locationFilter, _dateFilter, result.nextPageUrl, providerFilterStr);
       
-      // Since we just inserted them, they should be in 'cached' status. We fetch the whole cache or just append the newly inserted
-      // Actually we just append the result.jobs, but we should make sure they have their ID.
-      // Getting cached jobs might return all previous ones too if they haven't been swiped.
-      // So we can just fetch all cached jobs again to be safe and accurate with the DB.
-      final allCached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter);
+      final allCached = await db.getCachedJobs(_lastSearchQuery, _locationFilter, _dateFilter, providerFilterStr);
 
       if (mounted) {
         setState(() {
@@ -197,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.5,
+          initialChildSize: 0.6,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
@@ -205,10 +215,12 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollController: scrollController,
               currentLocation: _locationFilter,
               currentDateFilter: _dateFilter,
-              onFiltersApplied: (newLocation, newDateFilter) {
+              currentProviderFilters: _providerFilters,
+              onFiltersApplied: (newLocation, newDateFilter, newProviderFilters) {
                 setState(() {
                   _locationFilter = newLocation;
                   _dateFilter = newDateFilter;
+                  _providerFilters = newProviderFilters;
                 });
                 if (_lastSearchQuery.isNotEmpty) {
                   _searchJobs(_lastSearchQuery, forceRefresh: true);
@@ -350,6 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       query: _lastSearchQuery,
                                       locationFilter: _locationFilter,
                                       dateFilter: _dateFilter,
+                                      providerFilter: _providerFilters.join(','),
                                     );
                                     _searchJobs(_lastSearchQuery, forceRefresh: true);
                                   },
